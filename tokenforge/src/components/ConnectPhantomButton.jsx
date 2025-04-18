@@ -69,7 +69,7 @@ const ConnectPhantomButton = () => {
       ) : (
         <button onClick={handleConnect} className="connect-button">
           <img 
-            src="https://phantom.app/img/phantom-logo.svg" 
+            src="phantomLogo.png"
             alt="Phantom Logo" 
             className="phantom-logo"
           />

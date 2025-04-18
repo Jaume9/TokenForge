@@ -1,5 +1,7 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import './styles.css';
+import { createTokenWithMetadata } from '../services/TokenService';
+import { File } from 'nft.storage';
 
 interface FormData {
   tokenName: string;
@@ -58,6 +60,10 @@ const TokenCreatorForm: React.FC = () => {
 
   const [totalCost, setTotalCost] = useState<number>(0.1); // Base cost in SOL
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [creationStatus, setCreationStatus] = useState<string>('');
+  const [creationResult, setCreationResult] = useState<any>(null);
+  const [creationError, setCreationError] = useState<string | null>(null);
 
   // Calculate total cost whenever relevant form fields change
   useEffect(() => {
@@ -127,7 +133,10 @@ const TokenCreatorForm: React.FC = () => {
         return;
       }
       
-      setFormData({ ...formData, image: file });
+      // Convert to NFT.Storage File type
+      const nftStorageFile = new File([file], file.name, { type: file.type });
+      
+      setFormData({ ...formData, image: nftStorageFile });
       setErrors({ ...errors, image: '' });
       
       // Create image preview
@@ -184,26 +193,151 @@ const TokenCreatorForm: React.FC = () => {
       }
     }
 
+    // Image is required
+    if (!formData.image) {
+      newErrors.image = 'Token image is required';
+      isValid = false;
+    }
+
     setErrors(newErrors);
     return isValid;
   };
 
+  // Check if Phantom Wallet is connected
+  const checkWalletConnection = (): boolean => {
+    if (!window.solana || !window.solana.isPhantom || !window.solana.isConnected) {
+      alert('Please connect your Phantom Wallet first');
+      return false;
+    }
+    return true;
+  };
+
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
-      // For now, just log the data
-      console.log('Form data submitted:', formData);
+    // Reset previous creation states
+    setCreationStatus('');
+    setCreationResult(null);
+    setCreationError(null);
+    
+    // Validate form inputs
+    if (!validateForm()) {
+      return;
+    }
+    
+    // Check if wallet is connected
+    if (!checkWalletConnection()) {
+      return;
+    }
+    
+    try {
+      setIsCreating(true);
+      setCreationStatus('Starting token creation process...');
       
-      // Here you would typically send the data to create the cryptocurrency
-      alert('Form validated successfully! In a full implementation, this would create your token.');
+      const supplyWithoutCommas = formData.totalSupply.replace(/,/g, '');
+      const numericSupply = parseFloat(supplyWithoutCommas);
+      
+      // Prepare token configuration
+      const tokenConfig = {
+        name: formData.tokenName,
+        symbol: formData.tokenSymbol,
+        description: formData.description,
+        decimals: formData.decimals,
+        totalSupply: numericSupply,
+        image: formData.image as File,
+        socialLinks: {
+          website: formData.website,
+          twitter: formData.twitter,
+          telegram: formData.telegram,
+          discord: formData.discord,
+        },
+        revokeMintAuthority: formData.revokeMintAuthority,
+        revokeFreezeAuthority: formData.revokeFreezeAuthority,
+        revokeUpdateAuthority: formData.revokeUpdateAuthority,
+        ...(formData.modifyCreatorInfo && {
+          creatorInfo: {
+            name: formData.creatorName,
+            website: formData.creatorWebsite,
+          },
+        }),
+      };
+      
+      setCreationStatus('Uploading image to IPFS...');
+      
+      // Create token with metadata
+      const result = await createTokenWithMetadata(window.solana, tokenConfig);
+      
+      setCreationStatus('Token created successfully!');
+      setCreationResult(result);
+      
+      console.log('Token created:', result);
+      
+    } catch (error) {
+      console.error('Error creating token:', error);
+      setCreationStatus('Token creation failed.');
+      setCreationError((error instanceof Error ? error.message : 'Failed to create token'));
+    } finally {
+      setIsCreating(false);
     }
   };
 
   return (
     <div className="token-creator-form">
       <h2 className="form-title">Create Your Token</h2>
+      
+      {/* Show creation result if available */}
+      {creationResult && (
+        <div className="creation-result">
+          <h3>Token Created Successfully!</h3>
+          <div className="result-item">
+            <strong>Token Mint Address:</strong>
+            <a 
+              href={`https://explorer.solana.com/address/${creationResult.mintAddress}?cluster=devnet`}
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              {creationResult.mintAddress}
+            </a>
+          </div>
+          <div className="result-item">
+            <strong>Token Account:</strong>
+            <a 
+              href={`https://explorer.solana.com/address/${creationResult.tokenAddress}?cluster=devnet`}
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              {creationResult.tokenAddress}
+            </a>
+          </div>
+          <div className="result-item">
+            <strong>Metadata:</strong>
+            <a 
+              href={creationResult.metadataUrl}
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              View Metadata
+            </a>
+          </div>
+        </div>
+      )}
+      
+      {/* Show error if there was an issue */}
+      {creationError && (
+        <div className="creation-error">
+          <h3>Error Creating Token</h3>
+          <p>{creationError}</p>
+        </div>
+      )}
+      
+      {/* Show creation status */}
+      {isCreating && (
+        <div className="creation-status">
+          <div className="spinner"></div>
+          <p>{creationStatus}</p>
+        </div>
+      )}
       
       <form onSubmit={handleSubmit}>
         <div className="form-section">
@@ -221,6 +355,7 @@ const TokenCreatorForm: React.FC = () => {
               value={formData.tokenName}
               onChange={handleInputChange}
               className={errors.tokenName ? 'error' : ''}
+              disabled={isCreating}
             />
             {errors.tokenName && <span className="error-message">{errors.tokenName}</span>}
           </div>
@@ -239,6 +374,7 @@ const TokenCreatorForm: React.FC = () => {
               onChange={handleInputChange}
               maxLength={8}
               className={errors.tokenSymbol ? 'error' : ''}
+              disabled={isCreating}
             />
             {errors.tokenSymbol && <span className="error-message">{errors.tokenSymbol}</span>}
           </div>
@@ -257,6 +393,7 @@ const TokenCreatorForm: React.FC = () => {
               min={0}
               max={18}
               className={errors.decimals ? 'error' : ''}
+              disabled={isCreating}
             />
             {errors.decimals && <span className="error-message">{errors.decimals}</span>}
           </div>
@@ -274,6 +411,7 @@ const TokenCreatorForm: React.FC = () => {
               onChange={handleSupplyChange}
               placeholder="e.g., 1,000,000"
               className={errors.totalSupply ? 'error' : ''}
+              disabled={isCreating}
             />
             {errors.totalSupply && <span className="error-message">{errors.totalSupply}</span>}
           </div>
@@ -287,13 +425,14 @@ const TokenCreatorForm: React.FC = () => {
               value={formData.description}
               onChange={handleInputChange}
               rows={4}
+              disabled={isCreating}
             />
           </div>
           
           {/* Image Upload */}
           <div className="form-group">
             <label htmlFor="image">
-              Token Image <span className="hint">(JPG/PNG, max 5MB)</span>
+              Token Image <span className="required">*</span> <span className="hint">(JPG/PNG, max 5MB)</span>
             </label>
             <input
               type="file"
@@ -302,6 +441,7 @@ const TokenCreatorForm: React.FC = () => {
               accept="image/jpeg, image/png"
               onChange={handleImageUpload}
               className={errors.image ? 'error' : ''}
+              disabled={isCreating}
             />
             {errors.image && <span className="error-message">{errors.image}</span>}
             
@@ -327,6 +467,7 @@ const TokenCreatorForm: React.FC = () => {
               value={formData.website}
               onChange={handleInputChange}
               placeholder="https://yourwebsite.com"
+              disabled={isCreating}
             />
           </div>
           
@@ -339,6 +480,7 @@ const TokenCreatorForm: React.FC = () => {
               value={formData.twitter}
               onChange={handleInputChange}
               placeholder="@yourtwitterhandle"
+              disabled={isCreating}
             />
           </div>
           
@@ -351,6 +493,7 @@ const TokenCreatorForm: React.FC = () => {
               value={formData.telegram}
               onChange={handleInputChange}
               placeholder="t.me/yourgroupname"
+              disabled={isCreating}
             />
           </div>
           
@@ -363,6 +506,7 @@ const TokenCreatorForm: React.FC = () => {
               value={formData.discord}
               onChange={handleInputChange}
               placeholder="discord.gg/yourserver"
+              disabled={isCreating}
             />
           </div>
         </div>
@@ -378,6 +522,7 @@ const TokenCreatorForm: React.FC = () => {
               name="revokeMintAuthority"
               checked={formData.revokeMintAuthority}
               onChange={handleInputChange}
+              disabled={isCreating}
             />
             <label htmlFor="revokeMintAuthority">
               Revoke Mint Authority (+0.1 SOL)
@@ -391,6 +536,7 @@ const TokenCreatorForm: React.FC = () => {
               name="revokeFreezeAuthority"
               checked={formData.revokeFreezeAuthority}
               onChange={handleInputChange}
+              disabled={isCreating}
             />
             <label htmlFor="revokeFreezeAuthority">
               Revoke Freeze Authority (+0.1 SOL)
@@ -404,6 +550,7 @@ const TokenCreatorForm: React.FC = () => {
               name="revokeUpdateAuthority"
               checked={formData.revokeUpdateAuthority}
               onChange={handleInputChange}
+              disabled={isCreating}
             />
             <label htmlFor="revokeUpdateAuthority">
               Revoke Update Authority (+0.1 SOL)
@@ -417,6 +564,7 @@ const TokenCreatorForm: React.FC = () => {
               name="modifyCreatorInfo"
               checked={formData.modifyCreatorInfo}
               onChange={handleInputChange}
+              disabled={isCreating}
             />
             <label htmlFor="modifyCreatorInfo">
               Modify Creator Information (+0.1 SOL)
@@ -434,6 +582,7 @@ const TokenCreatorForm: React.FC = () => {
                   name="creatorName"
                   value={formData.creatorName}
                   onChange={handleInputChange}
+                  disabled={isCreating}
                 />
               </div>
               
@@ -446,6 +595,7 @@ const TokenCreatorForm: React.FC = () => {
                   value={formData.creatorWebsite}
                   onChange={handleInputChange}
                   placeholder="https://creatorwebsite.com"
+                  disabled={isCreating}
                 />
               </div>
             </div>
@@ -466,8 +616,12 @@ const TokenCreatorForm: React.FC = () => {
         </div>
         
         {/* Submit button */}
-        <button type="submit" className="submit-button">
-          Create Token
+        <button 
+          type="submit" 
+          className="submit-button"
+          disabled={isCreating}
+        >
+          {isCreating ? 'Creating Token...' : 'Create Token'}
         </button>
       </form>
     </div>

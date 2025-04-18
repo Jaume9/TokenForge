@@ -1,0 +1,46 @@
+.connect-button {
+    background: linear-gradient(45deg, #4a44f2, #9237f7);
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.2s;
+  }
+  
+  .connect-button:hover {
+    transform: scale(1.05);
+  }
+  
+  .phantom-logo {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .disconnect-button {
+    background: #ff4444;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 15px;
+  }
+  
+  .connected-info {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #4a44f2;
+  }
+  
+  .public-key {
+    background: rgba(74, 68, 242, 0.1);
+    padding: 8px 12px;
+    border-radius: 6px;
+  }

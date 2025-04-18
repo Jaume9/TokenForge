@@ -6,6 +6,10 @@
       "dom.iterable",
       "esnext"
     ],
+    "types": ["node"],
+    "paths": {
+      "process/*": ["./node_modules/process/*"]
+    },
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,

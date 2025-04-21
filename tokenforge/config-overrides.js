@@ -1,25 +1,22 @@
 const webpack = require('webpack');
 
 module.exports = function override(config) {
-  // Fallback configuration
   const fallback = config.resolve.fallback || {};
   Object.assign(fallback, {
     "crypto": require.resolve("crypto-browserify"),
     "stream": require.resolve("stream-browserify"),
     "buffer": require.resolve("buffer"),
-    "process": require.resolve("process/browser.js") // Añade esta línea
+    "process": require.resolve("process/browser.js")
   });
   config.resolve.fallback = fallback;
 
-  // Plugin configuration
   config.plugins = (config.plugins || []).concat([
     new webpack.ProvidePlugin({
-      process: 'process/browser.js', // Modifica esta línea
+      process: 'process/browser.js',
       Buffer: ['buffer', 'Buffer']
     })
   ]);
 
-  // Añade esto para manejar extensiones de archivo
   config.resolve.extensions = [
     ...config.resolve.extensions,
     '.js',

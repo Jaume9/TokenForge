@@ -186,8 +186,9 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
     if (!metadataUri || !config.name || !config.symbol || !wallet.publicKey) {
       throw new Error("Missing required metadata fields");
     }
+    
     const metaplex = Metaplex.make(connection).use(keypairIdentity(wallet));
-
+    
     try {
       const metadataBuilder = await metaplex
         .nfts()

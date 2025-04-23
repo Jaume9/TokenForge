@@ -1,38 +1,145 @@
 .App {
   text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+  background: linear-gradient(135deg, #1e1e2f, #2a2a3d);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
+  color: #e0e0e0;
+  font-family: 'Arial', sans-serif;
+}
+
+.App-header {
+  font-size: 3rem;
+  font-weight: bold;
+  margin: 15px 0 20px; /* Reducir el margen superior a 10px */
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+.card {
+  background: #3e3a2e;
+  color: #e0e0e0;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), 
+              0 0 10px rgba(138, 43, 226, 0.5), /* Violet glow */
+              0 0 20px rgba(74, 144, 226, 0.5); /* Blue glow */
+  border: 2px solid transparent;
+  max-width: 800px; /* Aumentar el ancho máximo */
+  width: 95%; /* Hacer que ocupe el 95% del ancho disponible */
+  margin: 20px auto;
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 
+              0 0 15px rgba(138, 43, 226, 0.7), /* Stronger violet glow */
+              0 0 30px rgba(74, 144, 226, 0.7); /* Stronger blue glow */
+  border-color: rgba(138, 43, 226, 0.8); /* Violet border on hover */
+}
+
+.card h2 {
+  font-size: 1.8rem;
+  color: #a0a0ff;
+  margin-bottom: 20px;
+}
+
+.card form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.card .form-group label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.card .form-group input,
+.card .form-group textarea,
+.card .form-group select {
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #f5f2f1;
+  color: #000000;
+}
+
+.card .form-group input:focus,
+.card .form-group textarea:focus,
+.card .form-group select:focus {
+  outline: none;
+  border-color: #a0a0ff;
+  box-shadow: 0 0 5px rgba(160, 160, 255, 0.5);
+}
+
+.card .submit-button {
+  background: linear-gradient(45deg, #3a3a5e, #4a4a7a);
   color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-.App-link {
-  color: #61dafb;
+.card .submit-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.card .submit-button:disabled {
+  background: #555;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Ajustar el color del texto de ejemplo y agregar márgenes */
+.card .form-group label {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #e0e0e0; /* Cambiar el color del texto a gris oscuro */
+}
+
+.card .form-group input,
+.card .form-group textarea,
+.card .form-group select {
+  padding: 10px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: #f5f2f1;
+  color: #000000;
+  margin-bottom: 15px; /* Agregar margen entre los elementos del formulario */
+}
+
+.card .form-group input::placeholder,
+.card .form-group textarea::placeholder {
+  color: #666; /* Color gris oscuro para el texto de ejemplo */
+}
+
+.card .form-group input:focus,
+.card .form-group textarea:focus,
+.card .form-group select:focus {
+  outline: none;
+  border-color: #a0a0ff;
+  box-shadow: 0 0 5px rgba(160, 160, 255, 0.5);
+}
+
+.card .form-group textarea {
+  resize: vertical; /* Permitir redimensionar verticalmente */
+}
+
+.card .form-section {
+  margin-bottom: 20px; /* Separar secciones del formulario */
+}
+
+.card .form-title {
+  font-size: 1.5rem;
+  color: #7272ef;
+  margin-bottom: 20px;
 }

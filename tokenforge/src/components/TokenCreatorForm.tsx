@@ -1,7 +1,6 @@
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import './styles.css';
 import { createTokenWithMetadata } from '../services/TokenService';
-import { File } from 'nft.storage';
 
 interface FormData {
   tokenName: string;
@@ -133,10 +132,7 @@ const TokenCreatorForm: React.FC = () => {
         return;
       }
       
-      // Convert to NFT.Storage File type
-      const nftStorageFile = new File([file], file.name, { type: file.type });
-      
-      setFormData({ ...formData, image: nftStorageFile });
+      setFormData({ ...formData, image: file });
       setErrors({ ...errors, image: '' });
       
       // Create image preview

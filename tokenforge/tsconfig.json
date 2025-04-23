@@ -6,7 +6,7 @@
       "dom.iterable",
       "esnext"
     ],
-    "types": ["node"],
+    "types": ["node", "jest"],
     "paths": {
       "process/*": ["./node_modules/process/*"]
     },

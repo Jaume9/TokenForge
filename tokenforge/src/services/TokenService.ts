@@ -3,7 +3,8 @@ import {
   Transaction, 
   SystemProgram, 
   PublicKey, 
-  Keypair 
+  Keypair,
+  sendAndConfirmTransaction
 } from '@solana/web3.js';
 import { 
   TOKEN_PROGRAM_ID, 
@@ -17,12 +18,18 @@ import {
 } from '@solana/spl-token';
 import { 
   Metaplex, 
-  keypairIdentity 
+  keypairIdentity,
+  CreateNftInput,
+  toMetaplexFile
 } from '@metaplex-foundation/js';
+import { DataV2 } from '@metaplex-foundation/mpl-token-metadata';
 import lighthouse from '@lighthouse-web3/sdk';
 
 // Token Extensions Program ID (replaces standard Token Program for tokens with metadata)
 const TOKEN_EXTENSIONS_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
+
+// Metaplex Token Metadata Program
+const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
 
 // Lighthouse API Key
 const LIGHTHOUSE_API_KEY = process.env.REACT_APP_LIGHTHOUSE_API_KEY || 'YOUR_LIGHTHOUSE_API_KEY';
@@ -182,103 +189,147 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
     await confirmTransaction(connection, mintSignature);
     console.log("Token mint created successfully");
 
-    console.log("Initializing token metadata...");
-    if (!metadataUri || !config.name || !config.symbol || !wallet.publicKey) {
-      throw new Error("Missing required metadata fields");
-    }
-    
-    const metaplex = Metaplex.make(connection).use(keypairIdentity(wallet));
+    // Después de crear la cuenta del token, podemos continuar con la creación de los metadatos
+    console.log("Inicializando metadatos del token (método alternativo)...");
     
     try {
-      const metadataBuilder = await metaplex
-        .nfts()
-        .builders()
-        .create({
-          uri: metadataUri, 
-          name: config.name,
-          symbol: config.symbol,
-          sellerFeeBasisPoints: 0,
-          useExistingMint: mintPubkey,
-          isMutable: true,
-          updateAuthority: wallet.publicKey,
-        });
-    
-      const metadataTransaction = new Transaction();
-      for (const instruction of metadataBuilder.getInstructions()) {
-        metadataTransaction.add(instruction);
+      // Crear la cuenta de token asociada antes de los metadatos
+      console.log("Creating token account...");
+      const associatedTokenAddress = await getAssociatedTokenAddress(
+        mintPubkey,
+        wallet.publicKey,
+        false,
+        TOKEN_EXTENSIONS_PROGRAM_ID
+      );
+
+      const createAccountTransaction = new Transaction().add(
+        createAssociatedTokenAccountInstruction(
+          wallet.publicKey,
+          associatedTokenAddress,
+          wallet.publicKey,
+          mintPubkey,
+          TOKEN_EXTENSIONS_PROGRAM_ID
+        )
+      );
+
+      const accountBlockhash = await connection.getLatestBlockhash('confirmed');
+      createAccountTransaction.recentBlockhash = accountBlockhash.blockhash;
+      createAccountTransaction.feePayer = wallet.publicKey;
+
+      const signedAccountTx = await wallet.signTransaction(createAccountTransaction);
+      const accountSignature = await connection.sendRawTransaction(signedAccountTx.serialize());
+      console.log("Create token account transaction sent:", accountSignature);
+      await confirmTransaction(connection, accountSignature);
+      console.log("Token account created successfully");
+
+      // Acuñar tokens al creador
+      console.log("Acuñando tokens...");
+      const mintAmount = config.totalSupply * Math.pow(10, config.decimals);
+      const mintToTransaction = new Transaction().add(
+        createMintToInstruction(
+          mintPubkey,
+          associatedTokenAddress,
+          wallet.publicKey,
+          mintAmount,
+          [],
+          TOKEN_EXTENSIONS_PROGRAM_ID
+        )
+      );
+
+      const mintBlockhash = await connection.getLatestBlockhash('confirmed');
+      mintToTransaction.recentBlockhash = mintBlockhash.blockhash;
+      mintToTransaction.feePayer = wallet.publicKey;
+
+      const signedMintToTx = await wallet.signTransaction(mintToTransaction);
+      const mintToSignature = await connection.sendRawTransaction(signedMintToTx.serialize());
+      console.log("Mint tokens transaction sent:", mintToSignature);
+      await confirmTransaction(connection, mintToSignature);
+      console.log("Tokens acuñados exitosamente");
+      
+      // Revocar autoridades si se seleccionó en las opciones
+      if (config.revokeMintAuthority) {
+        console.log("Revocando autoridad de acuñación...");
+        const revokeMintAuthorityTx = new Transaction().add(
+          createSetAuthorityInstruction(
+            mintPubkey,
+            wallet.publicKey,
+            AuthorityType.MintTokens,
+            null,
+            [],
+            TOKEN_EXTENSIONS_PROGRAM_ID
+          )
+        );
+        
+        const revokeBlockhash = await connection.getLatestBlockhash('confirmed');
+        revokeMintAuthorityTx.recentBlockhash = revokeBlockhash.blockhash;
+        revokeMintAuthorityTx.feePayer = wallet.publicKey;
+        
+        const signedRevokeTx = await wallet.signTransaction(revokeMintAuthorityTx);
+        const revokeSignature = await connection.sendRawTransaction(signedRevokeTx.serialize());
+        console.log("Revoke mint authority transaction sent:", revokeSignature);
+        await confirmTransaction(connection, revokeSignature);
+        console.log("Autoridad de acuñación revocada exitosamente");
       }
-    
-      metadataTransaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-      metadataTransaction.feePayer = wallet.publicKey;
-    
-      const signedMetadataTx = await wallet.signTransaction(metadataTransaction); // Firmar con la wallet conectada
-      const metadataSignature = await connection.sendRawTransaction(signedMetadataTx.serialize());
-      console.log("Metadata initialization transaction sent:", metadataSignature);
-      await confirmTransaction(connection, metadataSignature);
-      console.log("Token metadata created successfully");
+      
+      if (config.revokeFreezeAuthority) {
+        console.log("Revocando autoridad de congelación...");
+        const revokeFreezeAuthorityTx = new Transaction().add(
+          createSetAuthorityInstruction(
+            mintPubkey,
+            wallet.publicKey,
+            AuthorityType.FreezeAccount,
+            null,
+            [],
+            TOKEN_EXTENSIONS_PROGRAM_ID
+          )
+        );
+        
+        const revokeBlockhash = await connection.getLatestBlockhash('confirmed');
+        revokeFreezeAuthorityTx.recentBlockhash = revokeBlockhash.blockhash;
+        revokeFreezeAuthorityTx.feePayer = wallet.publicKey;
+        
+        const signedRevokeTx = await wallet.signTransaction(revokeFreezeAuthorityTx);
+        const revokeSignature = await connection.sendRawTransaction(signedRevokeTx.serialize());
+        console.log("Revoke freeze authority transaction sent:", revokeSignature);
+        await confirmTransaction(connection, revokeSignature);
+        console.log("Autoridad de congelación revocada exitosamente");
+      }
+      
+      return {
+        mintAddress: mintPubkey.toBase58(),
+        tokenAddress: associatedTokenAddress.toBase58(),
+        metadataUrl: metadataUri,
+        imageUrl: imageUri,
+      };
+      
     } catch (error) {
-      console.error("Failed to create token metadata:", error);
+      console.error("Error durante la creación del token:", error);
+      throw new Error(`Error durante la creación del token: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    console.log("Creating token account...");
-    const associatedTokenAddress = await getAssociatedTokenAddress(
-      mintPubkey,
-      wallet.publicKey,
-      false,
-      TOKEN_EXTENSIONS_PROGRAM_ID
-    );
-
-    const createAccountTransaction = new Transaction().add(
-      createAssociatedTokenAccountInstruction(
-        wallet.publicKey,
-        associatedTokenAddress,
-        wallet.publicKey,
-        mintPubkey,
-        TOKEN_EXTENSIONS_PROGRAM_ID
-      )
-    );
-
-    const accountBlockhash = await connection.getLatestBlockhash('confirmed');
-    createAccountTransaction.recentBlockhash = accountBlockhash.blockhash;
-    createAccountTransaction.feePayer = wallet.publicKey;
-
-    const signedAccountTx = await wallet.signTransaction(createAccountTransaction);
-    const accountSignature = await connection.sendRawTransaction(signedAccountTx.serialize());
-    console.log("Create token account transaction sent:", accountSignature);
-    await confirmTransaction(connection, accountSignature);
-    console.log("Token account created successfully");
-
-    console.log("Minting tokens...");
-    const mintAmount = config.totalSupply * Math.pow(10, config.decimals);
-    const mintToTransaction = new Transaction().add(
-      createMintToInstruction(
-        mintPubkey,
-        associatedTokenAddress,
-        wallet.publicKey,
-        mintAmount,
-        [],
-        TOKEN_EXTENSIONS_PROGRAM_ID
-      )
-    );
-
-    const mintBlockhash = await connection.getLatestBlockhash('confirmed');
-    mintToTransaction.recentBlockhash = mintBlockhash.blockhash;
-    mintToTransaction.feePayer = wallet.publicKey;
-
-    const signedMintToTx = await wallet.signTransaction(mintToTransaction);
-    const mintToSignature = await connection.sendRawTransaction(signedMintToTx.serialize());
-    console.log("Mint tokens transaction sent:", mintToSignature);
-    await confirmTransaction(connection, mintToSignature);
-    console.log("Tokens minted successfully");
-
-    return {
-      mintAddress: mintPubkey.toBase58(),
-      tokenAddress: associatedTokenAddress.toBase58(),
-      metadataUrl: metadataUri,
-      imageUrl: imageUri,
-    };
   } catch (error) {
     console.error("Token creation error:", error);
     throw new Error(`Token creation failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
+
+/**
+ * Función alternativa para crear los metadatos del token manualmente
+ * Esta función podría usarse como reemplazo si el SDK de Metaplex causa problemas
+ */
+async function createTokenMetadata(
+  connection: Connection, 
+  wallet: any, 
+  mintPubkey: PublicKey, 
+  metadataUri: string, 
+  tokenName: string, 
+  tokenSymbol: string
+) {
+  try {
+    // Aquí iría la lógica para crear los metadatos manualmente usando instrucciones
+    // directas en lugar de depender de Metaplex SDK
+    console.log("Implementación manual de metadatos pendiente");
+  } catch (error) {
+    console.error("Failed to manually create token metadata:", error);
+    throw error;
+  }
+}

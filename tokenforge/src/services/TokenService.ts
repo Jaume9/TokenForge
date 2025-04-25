@@ -4,7 +4,9 @@ import {
   SystemProgram, 
   PublicKey, 
   Keypair,
-  sendAndConfirmTransaction
+  sendAndConfirmTransaction,
+  VersionedTransaction,
+  TransactionMessage
 } from '@solana/web3.js';
 import { 
   TOKEN_PROGRAM_ID, 
@@ -153,22 +155,42 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
     const metadataUri = `https://gateway.lighthouse.storage/ipfs/${metadataCid}`;
     console.log("Metadata URI:", metadataUri);
 
-    console.log("Creating token mint account...");
+    console.log("Creating token with all instructions...");
     const mintKeypair = Keypair.generate();
     const mintPubkey = mintKeypair.publicKey;
     console.log("Mint address:", mintPubkey.toString());
 
+    // Calcular espacio y renta mínima para la cuenta del token
     const metadataSpace = 82;
     const mintRent = await connection.getMinimumBalanceForRentExemption(metadataSpace);
 
-    const createMintTransaction = new Transaction().add(
+    // Obtener la dirección de la cuenta de token asociada
+    const associatedTokenAddress = await getAssociatedTokenAddress(
+      mintPubkey,
+      wallet.publicKey,
+      false,
+      TOKEN_EXTENSIONS_PROGRAM_ID
+    );
+
+    // Calcular el monto de tokens a acuñar
+    const mintAmount = config.totalSupply * Math.pow(10, config.decimals);
+
+    // Crear una única transacción con todas las instrucciones necesarias
+    const combinedTransaction = new Transaction();
+
+    // 1. Instrucción para crear la cuenta del mint
+    combinedTransaction.add(
       SystemProgram.createAccount({
         fromPubkey: wallet.publicKey,
         newAccountPubkey: mintPubkey,
         space: metadataSpace,
         lamports: mintRent,
         programId: TOKEN_EXTENSIONS_PROGRAM_ID,
-      }),
+      })
+    );
+
+    // 2. Instrucción para inicializar el mint
+    combinedTransaction.add(
       createInitializeMintInstruction(
         mintPubkey,
         config.decimals,
@@ -178,136 +200,89 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
       )
     );
 
-    const { blockhash } = await connection.getLatestBlockhash('confirmed');
-    createMintTransaction.recentBlockhash = blockhash;
-    createMintTransaction.feePayer = wallet.publicKey;
-
-    createMintTransaction.partialSign(mintKeypair);
-    const signedMintTx = await wallet.signTransaction(createMintTransaction);
-    const mintSignature = await connection.sendRawTransaction(signedMintTx.serialize());
-    console.log("Create mint transaction sent:", mintSignature);
-    await confirmTransaction(connection, mintSignature);
-    console.log("Token mint created successfully");
-
-    // Después de crear la cuenta del token, podemos continuar con la creación de los metadatos
-    console.log("Inicializando metadatos del token (método alternativo)...");
-    
-    try {
-      // Crear la cuenta de token asociada antes de los metadatos
-      console.log("Creating token account...");
-      const associatedTokenAddress = await getAssociatedTokenAddress(
-        mintPubkey,
+    // 3. Instrucción para crear la cuenta de token asociada
+    combinedTransaction.add(
+      createAssociatedTokenAccountInstruction(
         wallet.publicKey,
-        false,
+        associatedTokenAddress,
+        wallet.publicKey,
+        mintPubkey,
         TOKEN_EXTENSIONS_PROGRAM_ID
-      );
+      )
+    );
 
-      const createAccountTransaction = new Transaction().add(
-        createAssociatedTokenAccountInstruction(
-          wallet.publicKey,
-          associatedTokenAddress,
-          wallet.publicKey,
+    // 4. Instrucción para acuñar tokens
+    combinedTransaction.add(
+      createMintToInstruction(
+        mintPubkey,
+        associatedTokenAddress,
+        wallet.publicKey,
+        mintAmount,
+        [],
+        TOKEN_EXTENSIONS_PROGRAM_ID
+      )
+    );
+
+    // 5. Añadir instrucciones condicionales para revocar autoridades
+    if (config.revokeMintAuthority) {
+      combinedTransaction.add(
+        createSetAuthorityInstruction(
           mintPubkey,
-          TOKEN_EXTENSIONS_PROGRAM_ID
-        )
-      );
-
-      const accountBlockhash = await connection.getLatestBlockhash('confirmed');
-      createAccountTransaction.recentBlockhash = accountBlockhash.blockhash;
-      createAccountTransaction.feePayer = wallet.publicKey;
-
-      const signedAccountTx = await wallet.signTransaction(createAccountTransaction);
-      const accountSignature = await connection.sendRawTransaction(signedAccountTx.serialize());
-      console.log("Create token account transaction sent:", accountSignature);
-      await confirmTransaction(connection, accountSignature);
-      console.log("Token account created successfully");
-
-      // Acuñar tokens al creador
-      console.log("Acuñando tokens...");
-      const mintAmount = config.totalSupply * Math.pow(10, config.decimals);
-      const mintToTransaction = new Transaction().add(
-        createMintToInstruction(
-          mintPubkey,
-          associatedTokenAddress,
           wallet.publicKey,
-          mintAmount,
+          AuthorityType.MintTokens,
+          null,
           [],
           TOKEN_EXTENSIONS_PROGRAM_ID
         )
       );
-
-      const mintBlockhash = await connection.getLatestBlockhash('confirmed');
-      mintToTransaction.recentBlockhash = mintBlockhash.blockhash;
-      mintToTransaction.feePayer = wallet.publicKey;
-
-      const signedMintToTx = await wallet.signTransaction(mintToTransaction);
-      const mintToSignature = await connection.sendRawTransaction(signedMintToTx.serialize());
-      console.log("Mint tokens transaction sent:", mintToSignature);
-      await confirmTransaction(connection, mintToSignature);
-      console.log("Tokens acuñados exitosamente");
-      
-      // Revocar autoridades si se seleccionó en las opciones
-      if (config.revokeMintAuthority) {
-        console.log("Revocando autoridad de acuñación...");
-        const revokeMintAuthorityTx = new Transaction().add(
-          createSetAuthorityInstruction(
-            mintPubkey,
-            wallet.publicKey,
-            AuthorityType.MintTokens,
-            null,
-            [],
-            TOKEN_EXTENSIONS_PROGRAM_ID
-          )
-        );
-        
-        const revokeBlockhash = await connection.getLatestBlockhash('confirmed');
-        revokeMintAuthorityTx.recentBlockhash = revokeBlockhash.blockhash;
-        revokeMintAuthorityTx.feePayer = wallet.publicKey;
-        
-        const signedRevokeTx = await wallet.signTransaction(revokeMintAuthorityTx);
-        const revokeSignature = await connection.sendRawTransaction(signedRevokeTx.serialize());
-        console.log("Revoke mint authority transaction sent:", revokeSignature);
-        await confirmTransaction(connection, revokeSignature);
-        console.log("Autoridad de acuñación revocada exitosamente");
-      }
-      
-      if (config.revokeFreezeAuthority) {
-        console.log("Revocando autoridad de congelación...");
-        const revokeFreezeAuthorityTx = new Transaction().add(
-          createSetAuthorityInstruction(
-            mintPubkey,
-            wallet.publicKey,
-            AuthorityType.FreezeAccount,
-            null,
-            [],
-            TOKEN_EXTENSIONS_PROGRAM_ID
-          )
-        );
-        
-        const revokeBlockhash = await connection.getLatestBlockhash('confirmed');
-        revokeFreezeAuthorityTx.recentBlockhash = revokeBlockhash.blockhash;
-        revokeFreezeAuthorityTx.feePayer = wallet.publicKey;
-        
-        const signedRevokeTx = await wallet.signTransaction(revokeFreezeAuthorityTx);
-        const revokeSignature = await connection.sendRawTransaction(signedRevokeTx.serialize());
-        console.log("Revoke freeze authority transaction sent:", revokeSignature);
-        await confirmTransaction(connection, revokeSignature);
-        console.log("Autoridad de congelación revocada exitosamente");
-      }
-      
-      return {
-        mintAddress: mintPubkey.toBase58(),
-        tokenAddress: associatedTokenAddress.toBase58(),
-        metadataUrl: metadataUri,
-        imageUrl: imageUri,
-      };
-      
-    } catch (error) {
-      console.error("Error durante la creación del token:", error);
-      throw new Error(`Error durante la creación del token: ${error instanceof Error ? error.message : String(error)}`);
     }
+
+    if (config.revokeFreezeAuthority) {
+      combinedTransaction.add(
+        createSetAuthorityInstruction(
+          mintPubkey,
+          wallet.publicKey,
+          AuthorityType.FreezeAccount,
+          null,
+          [],
+          TOKEN_EXTENSIONS_PROGRAM_ID
+        )
+      );
+    }
+
+    // Configurar la transacción con el último hash de bloque y el pagador de la cuota
+    const { blockhash } = await connection.getLatestBlockhash('confirmed');
+    combinedTransaction.recentBlockhash = blockhash;
+    combinedTransaction.feePayer = wallet.publicKey;
+
+    // Firmar parcialmente con el keypair del mint (necesario para crear la cuenta)
+    combinedTransaction.partialSign(mintKeypair);
+
+    console.log("Solicitando firma de la wallet para la transacción combinada...");
+    
+    // Firmar la transacción con la wallet conectada
+    const signedTx = await wallet.signTransaction(combinedTransaction);
+    
+    // Enviar la transacción firmada
+    console.log("Enviando transacción combinada...");
+    const signature = await connection.sendRawTransaction(signedTx.serialize());
+    
+    console.log("Transacción enviada:", signature);
+    console.log("Esperando confirmación...");
+    
+    // Esperar la confirmación de la transacción
+    await confirmTransaction(connection, signature);
+    
+    console.log("¡Token creado exitosamente con una única transacción!");
+
+    return {
+      mintAddress: mintPubkey.toBase58(),
+      tokenAddress: associatedTokenAddress.toBase58(),
+      metadataUrl: metadataUri,
+      imageUrl: imageUri,
+    };
   } catch (error) {
-    console.error("Token creation error:", error);
+    console.error("Error en la creación del token:", error);
     throw new Error(`Token creation failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 };

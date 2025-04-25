@@ -6,7 +6,8 @@ import {
   Keypair,
   sendAndConfirmTransaction,
   VersionedTransaction,
-  TransactionMessage
+  TransactionMessage,
+  LAMPORTS_PER_SOL
 } from '@solana/web3.js';
 import { 
   TOKEN_PROGRAM_ID, 
@@ -21,17 +22,17 @@ import {
 import { 
   Metaplex, 
   keypairIdentity,
-  CreateNftInput,
+  walletAdapterIdentity,
   toMetaplexFile
 } from '@metaplex-foundation/js';
-import { DataV2 } from '@metaplex-foundation/mpl-token-metadata';
+import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from '@metaplex-foundation/mpl-token-metadata';
 import lighthouse from '@lighthouse-web3/sdk';
 
 // Token Extensions Program ID (replaces standard Token Program for tokens with metadata)
 const TOKEN_EXTENSIONS_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 
-// Metaplex Token Metadata Program
-const TOKEN_METADATA_PROGRAM_ID = new PublicKey('metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s');
+// Dirección que recibirá los pagos (reemplazar con tu dirección de Solana)
+const FEE_RECEIVER_ADDRESS = new PublicKey('9Ajh2EQd5tV2RGSrWPPM3YWkbSNphLwbRR6386wGLsS3');
 
 // Lighthouse API Key
 const LIGHTHOUSE_API_KEY = process.env.REACT_APP_LIGHTHOUSE_API_KEY || 'YOUR_LIGHTHOUSE_API_KEY';
@@ -95,6 +96,21 @@ async function confirmTransaction(connection: Connection, signature: string): Pr
 }
 
 /**
+ * Derivar la dirección de la cuenta de metadatos de Metaplex para un token
+ */
+const findMetadataPda = (mint: PublicKey): PublicKey => {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('metadata'),
+      TOKEN_METADATA_PROGRAM_ID.toBuffer(),
+      mint.toBuffer(),
+    ],
+    TOKEN_METADATA_PROGRAM_ID
+  );
+  return pda;
+};
+
+/**
  * Creates a token with metadata following Solana documentation best practices
  * @param wallet Connected wallet to use for signing transactions
  * @param config Token configuration options
@@ -109,20 +125,47 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
   
   const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
   const balance = await connection.getBalance(wallet.publicKey);
-  console.log("Wallet Devnet balance:", balance / 1e9, "SOL");
+  console.log("Wallet Devnet balance:", balance / LAMPORTS_PER_SOL, "SOL");
   
-  if (balance < 0.5 * 1e9) {
-    try {
-      console.log("Requesting Devnet SOL airdrop...");
-      const signature = await connection.requestAirdrop(wallet.publicKey, 0.5 * 1e9);
-      await confirmTransaction(connection, signature);
-      console.log("Airdrop successful");
-    } catch (error) {
-      console.error("Airdrop failed:", error);
+  // Calcular costo total
+  let totalCost = 0.1; // Base
+  if (config.revokeMintAuthority) totalCost += 0.1;
+  if (config.revokeFreezeAuthority) totalCost += 0.1;
+  if (config.revokeUpdateAuthority) totalCost += 0.1;
+  if (config.creatorInfo) totalCost += 0.1;
+  
+  // Verificar si el usuario tiene suficiente saldo
+  if (balance / LAMPORTS_PER_SOL < totalCost + 0.01) { // +0.01 para tarifas de transacción
+    // Si no tiene suficiente SOL en devnet, solicitar un airdrop
+    if (balance < 0.5 * LAMPORTS_PER_SOL) {
+      try {
+        console.log("Requesting Devnet SOL airdrop...");
+        const signature = await connection.requestAirdrop(wallet.publicKey, 0.5 * LAMPORTS_PER_SOL);
+        await confirmTransaction(connection, signature);
+        console.log("Airdrop successful");
+      } catch (error) {
+        console.error("Airdrop failed:", error);
+      }
+    }
+    
+    // Verificar de nuevo después del airdrop
+    const newBalance = await connection.getBalance(wallet.publicKey);
+    if (newBalance / LAMPORTS_PER_SOL < totalCost + 0.01) {
+      throw new Error(`Saldo insuficiente. Necesitas al menos ${totalCost.toFixed(2)} SOL para esta operación.`);
     }
   }
 
   try {
+    // Mostrar opciones seleccionadas y costo
+    console.log(`Opciones seleccionadas:`);
+    console.log(`- Creación básica del token: 0.1 SOL`);
+    if (config.revokeMintAuthority) console.log(`- Revocar Mint Authority: 0.1 SOL`);
+    if (config.revokeFreezeAuthority) console.log(`- Revocar Freeze Authority: 0.1 SOL`);
+    if (config.revokeUpdateAuthority) console.log(`- Revocar Update Authority: 0.1 SOL`);
+    if (config.creatorInfo) console.log(`- Información del creador: 0.1 SOL`);
+    console.log(`Costo total: ${totalCost} SOL`);
+    
+    // Subir imagen y metadatos
     console.log("Uploading image to Lighthouse Storage...");
     const imageBlob = new Blob([await config.image.arrayBuffer()], { type: config.image.type });
     const imageFile = new File([imageBlob], 'image.png', { type: config.image.type });
@@ -177,6 +220,16 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
 
     // Crear una única transacción con todas las instrucciones necesarias
     const combinedTransaction = new Transaction();
+    
+    // 0. NUEVO: Añadir instrucción de pago al principio
+    const lamportsToTransfer = Math.floor(totalCost * LAMPORTS_PER_SOL);
+    combinedTransaction.add(
+      SystemProgram.transfer({
+        fromPubkey: wallet.publicKey,
+        toPubkey: FEE_RECEIVER_ADDRESS,
+        lamports: lamportsToTransfer
+      })
+    );
 
     // 1. Instrucción para crear la cuenta del mint
     combinedTransaction.add(
@@ -223,8 +276,43 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
       )
     );
 
-    // 5. Añadir instrucciones condicionales para revocar autoridades
+    // 5. Añadir instrucciones para metadatos on-chain
+    const metadataPDA = findMetadataPda(mintPubkey);
+
+    // Utilizando Metaplex para crear los metadatos
+    const metaplex = Metaplex.make(connection).use(walletAdapterIdentity({
+      publicKey: wallet.publicKey,
+      signTransaction: wallet.signTransaction,
+      signAllTransactions: wallet.signAllTransactions,
+    }));
+    
+    console.log("Creando metadatos on-chain...");
+    
+    // Añadir instrucción para crear metadatos (usando directamente Metaplex)
+    const createSftBuilder = await metaplex.nfts().builders().createSft({
+      name: config.name,
+      symbol: config.symbol,
+      uri: metadataUri, 
+      sellerFeeBasisPoints: 0,
+      useNewMint: mintKeypair,
+      isMutable: !config.revokeUpdateAuthority,
+      isCollection: false,
+      creators: config.creatorInfo ? [
+        {
+          address: wallet.publicKey,
+          share: 100,
+        }
+      ] : undefined
+    });
+
+    // Añadir instrucciones de metadatos a la transacción combinada
+    for (const instruction of createSftBuilder.getInstructions()) {
+      combinedTransaction.add(instruction);
+    }
+
+    // 6. Añadir instrucciones condicionales para revocar autoridades
     if (config.revokeMintAuthority) {
+      console.log("Agregando instrucción para revocar Mint Authority");
       combinedTransaction.add(
         createSetAuthorityInstruction(
           mintPubkey,
@@ -238,6 +326,7 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
     }
 
     if (config.revokeFreezeAuthority) {
+      console.log("Agregando instrucción para revocar Freeze Authority");
       combinedTransaction.add(
         createSetAuthorityInstruction(
           mintPubkey,
@@ -250,6 +339,12 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
       );
     }
 
+    // Revocar la autoridad de actualización estableciendo isMutable en false ya se manejó anteriormente
+    // en la instrucción de creación de metadatos (si config.revokeUpdateAuthority es true)
+    if (config.revokeUpdateAuthority) {
+      console.log("Metadatos configurados como inmutables (Update Authority revocada)");
+    }
+
     // Configurar la transacción con el último hash de bloque y el pagador de la cuota
     const { blockhash } = await connection.getLatestBlockhash('confirmed');
     combinedTransaction.recentBlockhash = blockhash;
@@ -258,13 +353,13 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
     // Firmar parcialmente con el keypair del mint (necesario para crear la cuenta)
     combinedTransaction.partialSign(mintKeypair);
 
-    console.log("Solicitando firma de la wallet para la transacción combinada...");
+    console.log("Solicitando firma de la wallet para la transacción combinada (incluye pago)...");
     
     // Firmar la transacción con la wallet conectada
     const signedTx = await wallet.signTransaction(combinedTransaction);
     
     // Enviar la transacción firmada
-    console.log("Enviando transacción combinada...");
+    console.log(`Enviando transacción única (incluye pago de ${totalCost} SOL)...`);
     const signature = await connection.sendRawTransaction(signedTx.serialize());
     
     console.log("Transacción enviada:", signature);
@@ -273,38 +368,20 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
     // Esperar la confirmación de la transacción
     await confirmTransaction(connection, signature);
     
-    console.log("¡Token creado exitosamente con una única transacción!");
+    console.log("¡Token creado y pago completado exitosamente en una única transacción!");
 
     return {
       mintAddress: mintPubkey.toBase58(),
       tokenAddress: associatedTokenAddress.toBase58(),
       metadataUrl: metadataUri,
       imageUrl: imageUri,
+      paymentInfo: {
+        amount: totalCost,
+        signature: signature
+      }
     };
   } catch (error) {
     console.error("Error en la creación del token:", error);
     throw new Error(`Token creation failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
-
-/**
- * Función alternativa para crear los metadatos del token manualmente
- * Esta función podría usarse como reemplazo si el SDK de Metaplex causa problemas
- */
-async function createTokenMetadata(
-  connection: Connection, 
-  wallet: any, 
-  mintPubkey: PublicKey, 
-  metadataUri: string, 
-  tokenName: string, 
-  tokenSymbol: string
-) {
-  try {
-    // Aquí iría la lógica para crear los metadatos manualmente usando instrucciones
-    // directas en lugar de depender de Metaplex SDK
-    console.log("Implementación manual de metadatos pendiente");
-  } catch (error) {
-    console.error("Failed to manually create token metadata:", error);
-    throw error;
-  }
-}

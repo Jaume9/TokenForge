@@ -6,7 +6,10 @@ module.exports = function override(config) {
     "crypto": require.resolve("crypto-browserify"),
     "stream": require.resolve("stream-browserify"),
     "buffer": require.resolve("buffer"),
-    "process": require.resolve("process/browser.js")
+    "process": require.resolve("process/browser.js"),
+    // Agregar los polyfills faltantes
+    "zlib": require.resolve("browserify-zlib"),
+    "path": require.resolve("path-browserify")
   });
   config.resolve.fallback = fallback;
 

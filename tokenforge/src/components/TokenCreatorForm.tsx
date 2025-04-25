@@ -41,9 +41,9 @@ const TokenCreatorForm: React.FC = () => {
     twitter: '',
     telegram: '',
     discord: '',
-    revokeMintAuthority: false,
-    revokeFreezeAuthority: false,
-    revokeUpdateAuthority: false,
+    revokeMintAuthority: true, // Set to true by default
+    revokeFreezeAuthority: true, // Set to true by default
+    revokeUpdateAuthority: true, // Set to true by default
     modifyCreatorInfo: false,
     creatorName: '',
     creatorWebsite: '',
@@ -598,14 +598,9 @@ const TokenCreatorForm: React.FC = () => {
           )}
         </div>
         
-        {/* Cost Summary */}
+        {/* Cost Summary - SIMPLIFIED */}
         <div className="cost-summary">
           <h3>Cost Summary</h3>
-          <p>Base Cost: 0.1 SOL</p>
-          {formData.revokeMintAuthority && <p>Revoke Mint Authority: +0.1 SOL</p>}
-          {formData.revokeFreezeAuthority && <p>Revoke Freeze Authority: +0.1 SOL</p>}
-          {formData.revokeUpdateAuthority && <p>Revoke Update Authority: +0.1 SOL</p>}
-          {formData.modifyCreatorInfo && <p>Modify Creator Info: +0.1 SOL</p>}
           <p className="total-cost">
             Total Cost: <strong>{totalCost.toFixed(1)} SOL</strong>
           </p>
@@ -622,6 +617,6 @@ const TokenCreatorForm: React.FC = () => {
       </form>
     </div>
   );
-};
+}
 
 export default TokenCreatorForm;

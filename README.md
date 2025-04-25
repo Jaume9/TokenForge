@@ -1,5 +1,4 @@
 # TODO
--agrupar pagaments amb 1
 -page liquidity pool amb Raydium
 -page controlar monedas
 

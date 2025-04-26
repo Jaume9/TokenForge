@@ -1,6 +1,7 @@
 # TODO
 -page liquidity pool amb Raydium
 -page controlar monedas
+-explicacio com funciona l'app en cada pagina en pasos senzills
 -funcionar sense devnet
 
 -----------------------------------------------------

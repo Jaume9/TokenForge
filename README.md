@@ -1,6 +1,7 @@
 # TODO
 -page liquidity pool amb Raydium
 -page controlar monedas
+-funcionar sense devnet
 
 -----------------------------------------------------
 

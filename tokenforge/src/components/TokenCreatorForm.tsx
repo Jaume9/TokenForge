@@ -284,37 +284,103 @@ const TokenCreatorForm: React.FC = () => {
       
       {/* Show creation result if available */}
       {creationResult && (
-        <div className="creation-result">
-          <h3>Token Created Successfully!</h3>
-          <div className="result-item">
-            <strong>Token Mint Address:</strong>
-            <a 
-              href={`https://explorer.solana.com/address/${creationResult.mintAddress}?cluster=devnet`}
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              {creationResult.mintAddress}
-            </a>
-          </div>
-          <div className="result-item">
-            <strong>Token Account:</strong>
-            <a 
-              href={`https://explorer.solana.com/address/${creationResult.tokenAddress}?cluster=devnet`}
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              {creationResult.tokenAddress}
-            </a>
-          </div>
-          <div className="result-item">
-            <strong>Metadata:</strong>
-            <a 
-              href={creationResult.metadataUrl}
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              View Metadata
-            </a>
+        <div className="creation-result-container">
+          <div className="creation-result">
+            <div className="result-header">
+              <div className="success-icon">✓</div>
+              <h3>Token Created Successfully!</h3>
+            </div>
+            
+            <div className="result-content">
+              <div className="result-image">
+                {imagePreview && <img src={imagePreview} alt={`${formData.tokenName} token`} />}
+              </div>
+              
+              <div className="result-details">
+                <div className="token-basic-info">
+                  <h4>{formData.tokenName} ({formData.tokenSymbol})</h4>
+                  <p>{formData.totalSupply.replace(/,/g, '')} tokens with {formData.decimals} decimals</p>
+                </div>
+                
+                <div className="address-card">
+                  <div className="address-header">
+                    <span className="address-type">Token Mint Address</span>
+                    <button 
+                      className="copy-button" 
+                      onClick={() => {navigator.clipboard.writeText(creationResult.mintAddress)}}
+                      title="Copy to clipboard"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <div className="address-value">
+                    <a 
+                      href={`https://explorer.solana.com/address/${creationResult.mintAddress}?cluster=devnet`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      {creationResult.mintAddress}
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="address-card">
+                  <div className="address-header">
+                    <span className="address-type">Token Account</span>
+                    <button 
+                      className="copy-button" 
+                      onClick={() => {navigator.clipboard.writeText(creationResult.tokenAddress)}}
+                      title="Copy to clipboard"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <div className="address-value">
+                    <a 
+                      href={`https://explorer.solana.com/address/${creationResult.tokenAddress}?cluster=devnet`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      {creationResult.tokenAddress}
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="address-card">
+                  <div className="address-header">
+                    <span className="address-type">Metadata</span>
+                    <button 
+                      className="copy-button" 
+                      onClick={() => {navigator.clipboard.writeText(creationResult.metadataUrl)}}
+                      title="Copy to clipboard"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <div className="address-value">
+                    <a 
+                      href={creationResult.metadataUrl}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      View Metadata
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="transaction-info">
+                  <span>Transaction: </span>
+                  <a 
+                    href={`https://explorer.solana.com/tx/${creationResult.paymentInfo.signature}?cluster=devnet`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    View on Solana Explorer
+                  </a>
+                </div>
+              </div>
+            </div>
+            
           </div>
         </div>
       )}
@@ -507,98 +573,137 @@ const TokenCreatorForm: React.FC = () => {
           </div>
         </div>
         
-        {/* Advanced Options */}
-        <div className="form-section">
+        {/* Advanced Options with Enhanced Design */}
+        <div className="form-section advanced-options-card">
           <h3>Advanced Options</h3>
+          <p className="section-description">
+            Configure security and ownership settings for your token.
+          </p>
           
-          <div className="checkbox-group">
-            <input
-              type="checkbox"
-              id="revokeMintAuthority"
-              name="revokeMintAuthority"
-              checked={formData.revokeMintAuthority}
-              onChange={handleInputChange}
-              disabled={isCreating}
-            />
-            <label htmlFor="revokeMintAuthority">
-              Revoke Mint Authority (+0.1 SOL)
-            </label>
-          </div>
-          
-          <div className="checkbox-group">
-            <input
-              type="checkbox"
-              id="revokeFreezeAuthority"
-              name="revokeFreezeAuthority"
-              checked={formData.revokeFreezeAuthority}
-              onChange={handleInputChange}
-              disabled={isCreating}
-            />
-            <label htmlFor="revokeFreezeAuthority">
-              Revoke Freeze Authority (+0.1 SOL)
-            </label>
-          </div>
-          
-          <div className="checkbox-group">
-            <input
-              type="checkbox"
-              id="revokeUpdateAuthority"
-              name="revokeUpdateAuthority"
-              checked={formData.revokeUpdateAuthority}
-              onChange={handleInputChange}
-              disabled={isCreating}
-            />
-            <label htmlFor="revokeUpdateAuthority">
-              Revoke Update Authority (+0.1 SOL)
-            </label>
-          </div>
-          
-          <div className="checkbox-group">
-            <input
-              type="checkbox"
-              id="modifyCreatorInfo"
-              name="modifyCreatorInfo"
-              checked={formData.modifyCreatorInfo}
-              onChange={handleInputChange}
-              disabled={isCreating}
-            />
-            <label htmlFor="modifyCreatorInfo">
-              Modify Creator Information (+0.1 SOL)
-            </label>
-          </div>
-          
-          {/* Creator info fields (only show when modifyCreatorInfo is checked) */}
-          {formData.modifyCreatorInfo && (
-            <div className="creator-info">
-              <div className="form-group">
-                <label htmlFor="creatorName">Creator Name</label>
+          <div className="option-card">
+            <div className="option-header">
+              <div className="checkbox-group">
                 <input
-                  type="text"
-                  id="creatorName"
-                  name="creatorName"
-                  value={formData.creatorName}
+                  type="checkbox"
+                  id="revokeMintAuthority"
+                  name="revokeMintAuthority"
+                  checked={formData.revokeMintAuthority}
                   onChange={handleInputChange}
                   disabled={isCreating}
                 />
+                <label htmlFor="revokeMintAuthority">
+                  Revoke Mint Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.1 SOL</span>
+                </label>
               </div>
-              
-              <div className="form-group">
-                <label htmlFor="creatorWebsite">Creator Website</label>
-                <input
-                  type="url"
-                  id="creatorWebsite"
-                  name="creatorWebsite"
-                  value={formData.creatorWebsite}
-                  onChange={handleInputChange}
-                  placeholder="https://creatorwebsite.com"
-                  disabled={isCreating}
-                />
-              </div>
+              <div className="tooltip-icon" title="Permanently prevents anyone from creating additional tokens">ⓘ</div>
             </div>
-          )}
+            <p className="option-description">
+              Permanently removes the ability to mint more tokens in the future. 
+              This makes your token supply truly fixed and immutable.
+            </p>
+          </div>
+          
+          <div className="option-card">
+            <div className="option-header">
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="revokeFreezeAuthority"
+                  name="revokeFreezeAuthority"
+                  checked={formData.revokeFreezeAuthority}
+                  onChange={handleInputChange}
+                  disabled={isCreating}
+                />
+                <label htmlFor="revokeFreezeAuthority">
+                  Revoke Freeze Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.1 SOL</span>
+                </label>
+              </div>
+              <div className="tooltip-icon" title="Removes the ability to freeze token accounts">ⓘ</div>
+            </div>
+            <p className="option-description">
+              Permanently removes the ability to freeze any token accounts.
+              This increases user trust as tokens can never be locked by an authority.
+            </p>
+          </div>
+          
+          <div className="option-card">
+            <div className="option-header">
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="revokeUpdateAuthority"
+                  name="revokeUpdateAuthority"
+                  checked={formData.revokeUpdateAuthority}
+                  onChange={handleInputChange}
+                  disabled={isCreating}
+                />
+                <label htmlFor="revokeUpdateAuthority">
+                  Revoke Update Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.1 SOL</span>
+                </label>
+              </div>
+              <div className="tooltip-icon" title="Makes token metadata permanent and unchangeable">ⓘ</div>
+            </div>
+            <p className="option-description">
+              Permanently freezes token metadata. No one will be able to change name, symbol, 
+              image or other metadata after creation.
+            </p>
+          </div>
+          
+          <div className="option-card">
+            <div className="option-header">
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="modifyCreatorInfo"
+                  name="modifyCreatorInfo"
+                  checked={formData.modifyCreatorInfo}
+                  onChange={handleInputChange}
+                  disabled={isCreating}
+                />
+                <label htmlFor="modifyCreatorInfo">
+                  Add Creator Information <span className="option-cost">+0.1 SOL</span>
+                </label>
+              </div>
+              <div className="tooltip-icon" title="Associate creator details with this token">ⓘ</div>
+            </div>
+            <p className="option-description">
+              Add verifiable creator information to your token's metadata, 
+              establishing attribution and authenticity.
+            </p>
+            
+            {/* Creator info fields (only show when modifyCreatorInfo is checked) */}
+            {formData.modifyCreatorInfo && (
+              <div className="creator-info">
+                <div className="form-group">
+                  <label htmlFor="creatorName">Creator Name</label>
+                  <input
+                    type="text"
+                    id="creatorName"
+                    name="creatorName"
+                    value={formData.creatorName}
+                    onChange={handleInputChange}
+                    disabled={isCreating}
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="creatorWebsite">Creator Website</label>
+                  <input
+                    type="url"
+                    id="creatorWebsite"
+                    name="creatorWebsite"
+                    value={formData.creatorWebsite}
+                    onChange={handleInputChange}
+                    placeholder="https://creatorwebsite.com"
+                    disabled={isCreating}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         
-        {/* Cost Summary - SIMPLIFIED */}
+        {/* Cost Summary */}
         <div className="cost-summary">
           <h3>Cost Summary</h3>
           <p className="total-cost">

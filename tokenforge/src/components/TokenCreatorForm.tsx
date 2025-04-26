@@ -518,7 +518,7 @@ const TokenCreatorForm: React.FC = () => {
         
         {/* Social Links */}
         <div className="form-section">
-          <h3>Social Links</h3>
+          <h3>Social Links -- Optional</h3>
           
           <div className="form-group">
             <label htmlFor="website">Website URL</label>

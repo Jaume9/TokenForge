@@ -495,3 +495,33 @@ input:disabled, textarea:disabled {
   color: #bbb;
   font-size: 0.9rem;
 }
+
+/* Error state for input fields */
+input.error,
+textarea.error {
+  border: 2px solid #ff4444 !important;
+  box-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+  animation: errorPulse 1s;
+}
+
+.error-message {
+  color: #ff4444;
+  font-size: 0.85rem;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+@keyframes errorPulse {
+  0% { box-shadow: 0 0 0 rgba(255, 68, 68, 0.5); }
+  50% { box-shadow: 0 0 10px rgba(255, 68, 68, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(255, 68, 68, 0.5); }
+}
+
+/* Focus style for error fields to maintain the error state but indicate focus */
+input.error:focus,
+textarea.error:focus {
+  border-color: #ff4444 !important;
+  outline: none;
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.7);
+}

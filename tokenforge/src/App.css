@@ -17,13 +17,13 @@
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 .card {
-  background: #3e3a2e;
+  background: linear-gradient(135deg, #252539, #32324a);
   color: #e0e0e0;
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), 
-              0 0 10px rgba(138, 43, 226, 0.5), /* Violet glow */
-              0 0 20px rgba(74, 144, 226, 0.5); /* Blue glow */
+              0 0 10px rgba(153, 78, 223, 0.5), /* Violet glow */
+              0 0 20px rgba(118, 160, 207, 0.5); /* Blue glow */
   border: 2px solid transparent;
   max-width: 800px; /* Aumentar el ancho máximo */
   width: 95%; /* Hacer que ocupe el 95% del ancho disponible */

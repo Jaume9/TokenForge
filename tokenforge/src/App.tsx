@@ -13,6 +13,9 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { clusterApiUrl } from '@solana/web3.js';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
+import TrustSection from './components/TrustSection';
+import Footer from './components/Footer';
+
 function App() {
   const network = WalletAdapterNetwork.Devnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
@@ -30,6 +33,8 @@ function App() {
               <TokenCreatorForm />
             </div>
             <HelpSidebar />
+            <TrustSection />
+            <Footer />
           </div>
         </WalletModalProvider>
       </WalletProvider>

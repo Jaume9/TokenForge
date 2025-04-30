@@ -27,12 +27,13 @@ import {
 } from '@metaplex-foundation/js';
 import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from '@metaplex-foundation/mpl-token-metadata';
 import lighthouse from '@lighthouse-web3/sdk';
+import 'dotenv/config';
 
 // Token Extensions Program ID (replaces standard Token Program for tokens with metadata)
 const TOKEN_EXTENSIONS_PROGRAM_ID = new PublicKey('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb');
 
-// Dirección que recibirá los pagos (reemplazar con tu dirección de Solana)
-const FEE_RECEIVER_ADDRESS = new PublicKey('9Ajh2EQd5tV2RGSrWPPM3YWkbSNphLwbRR6386wGLsS3');
+// Dirección que recibirá los pagos
+const FEE_RECEIVER_ADDRESS = new PublicKey('27BCQDeDE2y1iSnfYYwGWPNE9tXaq8YbJyJZ2bf9NZuR');
 
 // Lighthouse API Key
 const LIGHTHOUSE_API_KEY = process.env.REACT_APP_LIGHTHOUSE_API_KEY || 'YOUR_LIGHTHOUSE_API_KEY';
@@ -122,11 +123,37 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
   }
 
   console.log("Connected wallet public key:", wallet.publicKey.toString());
+
+  //devnet
+  //const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
+  // Configuración del RPC con Helius
+  const RPC_URL = process.env.REACT_APP_SOLANA_RPC_URL || 'https://mainnet.helius-rpc.com/?api-key=895d7d11-1e28-4385-adc6-1eea29ef98cb';
+  console.log("Using RPC endpoint:", RPC_URL.replace(/api-key=([^&]+)/, 'api-key=****')); // Log seguro sin mostrar la clave completa
   
-  const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
-  const balance = await connection.getBalance(wallet.publicKey);
-  console.log("Wallet Devnet balance:", balance / LAMPORTS_PER_SOL, "SOL");
-  
+  // Conexión mejorada con retry y mejor configuración
+  const connection = new Connection(RPC_URL, {
+    commitment: 'confirmed',
+    confirmTransactionInitialTimeout: 60000,
+    disableRetryOnRateLimit: false
+  });
+
+  try {
+    const balance = await connection.getBalance(wallet.publicKey);
+    console.log("Wallet balance:", balance / LAMPORTS_PER_SOL, "SOL");
+  } catch (error) {
+    console.error("Error getting wallet balance:", error);
+    
+    if (error instanceof Error && error.message && (error.message.includes('403') || error.message.includes('429'))) {
+      throw new Error("Error de conexión RPC: Límite de solicitudes excedido o problema de autorización.");
+    }
+    
+    if (error instanceof Error) {
+      throw new Error(`No se pudo obtener el saldo de la wallet: ${error.message}`);
+    } else {
+      throw new Error('No se pudo obtener el saldo de la wallet: Error desconocido');
+    }
+  }
+
   // Calcular costo total
   let totalCost = 0.1; // Base
   if (config.revokeMintAuthority) totalCost += 0.1;
@@ -135,8 +162,12 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
   if (config.creatorInfo) totalCost += 0.1;
   
   // Verificar si el usuario tiene suficiente saldo
+  /*
   if (balance / LAMPORTS_PER_SOL < totalCost + 0.01) { // +0.01 para tarifas de transacción
+    
     // Si no tiene suficiente SOL en devnet, solicitar un airdrop
+    //Devnet
+    /*
     if (balance < 0.5 * LAMPORTS_PER_SOL) {
       try {
         console.log("Requesting Devnet SOL airdrop...");
@@ -148,12 +179,14 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
       }
     }
     
+
+
     // Verificar de nuevo después del airdrop
     const newBalance = await connection.getBalance(wallet.publicKey);
     if (newBalance / LAMPORTS_PER_SOL < totalCost + 0.01) {
       throw new Error(`Saldo insuficiente. Necesitas al menos ${totalCost.toFixed(2)} SOL para esta operación.`);
     }
-  }
+  }*/
 
   try {
     // Mostrar opciones seleccionadas y costo

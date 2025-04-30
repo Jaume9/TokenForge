@@ -7,9 +7,10 @@ module.exports = function override(config) {
     "stream": require.resolve("stream-browserify"),
     "buffer": require.resolve("buffer"),
     "process": require.resolve("process/browser.js"),
-    // Agregar los polyfills faltantes
     "zlib": require.resolve("browserify-zlib"),
-    "path": require.resolve("path-browserify")
+    "path": require.resolve("path-browserify"),
+    // Agregar el polyfill para 'os'
+    "os": require.resolve("os-browserify/browser")
   });
   config.resolve.fallback = fallback;
 

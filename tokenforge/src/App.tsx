@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import './App.css';
 import ConnectPhantomButton from './components/ConnectPhantomButton';
 import TokenCreatorForm from './components/TokenCreatorForm';
+import NavBar from './components/NavBar';
 
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
@@ -22,6 +23,7 @@ function App() {
         <WalletModalProvider>
           <div className="App">
             <header className="App-header">TokenForge</header>
+            <NavBar />
             <ConnectPhantomButton />
             <div className="card">
               <TokenCreatorForm />

@@ -30,6 +30,9 @@ interface FormErrors {
 }
 
 const TokenCreatorForm: React.FC = () => {
+  
+  const [socialLinksOpen, setSocialLinksOpen] = useState<boolean>(false);
+
   const [formData, setFormData] = useState<FormData>({
     tokenName: '',
     tokenSymbol: '',
@@ -143,6 +146,8 @@ const TokenCreatorForm: React.FC = () => {
       reader.readAsDataURL(file);
     }
   };
+
+  const toggleSocialLinks = () => setSocialLinksOpen(prev => !prev);
 
   // Validate form
   const validateForm = (): boolean => {
@@ -315,7 +320,7 @@ const TokenCreatorForm: React.FC = () => {
                   </div>
                   <div className="address-value">
                     <a 
-                      href={`https://explorer.solana.com/address/${creationResult.mintAddress}?cluster=devnet`}
+                      href={`https://explorer.solana.com/address/${creationResult.mintAddress}`}
                       target="_blank" 
                       rel="noopener noreferrer"
                     >
@@ -337,7 +342,7 @@ const TokenCreatorForm: React.FC = () => {
                   </div>
                   <div className="address-value">
                     <a 
-                      href={`https://explorer.solana.com/address/${creationResult.tokenAddress}?cluster=devnet`}
+                      href={`https://explorer.solana.com/address/${creationResult.tokenAddress}`}
                       target="_blank" 
                       rel="noopener noreferrer"
                     >
@@ -371,7 +376,7 @@ const TokenCreatorForm: React.FC = () => {
                 <div className="transaction-info">
                   <span>Transaction: </span>
                   <a 
-                    href={`https://explorer.solana.com/tx/${creationResult.paymentInfo.signature}?cluster=devnet`}
+                    href={`https://explorer.solana.com/tx/${creationResult.paymentInfo.signature}`}
                     target="_blank" 
                     rel="noopener noreferrer"
                   >
@@ -517,61 +522,71 @@ const TokenCreatorForm: React.FC = () => {
         </div>
         
         {/* Social Links */}
-        <div className="form-section">
+        <div className="form-section collapsible-section">
+        <div 
+          className="collapsible-header" 
+          onClick={toggleSocialLinks}
+        >
           <h3>Social Links -- Optional</h3>
-          
-          <div className="form-group">
-            <label htmlFor="website">Website URL</label>
-            <input
-              type="url"
-              id="website"
-              name="website"
-              value={formData.website}
-              onChange={handleInputChange}
-              placeholder="https://yourwebsite.com"
-              disabled={isCreating}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="twitter">Twitter</label>
-            <input
-              type="text"
-              id="twitter"
-              name="twitter"
-              value={formData.twitter}
-              onChange={handleInputChange}
-              placeholder="@yourtwitterhandle"
-              disabled={isCreating}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="telegram">Telegram</label>
-            <input
-              type="text"
-              id="telegram"
-              name="telegram"
-              value={formData.telegram}
-              onChange={handleInputChange}
-              placeholder="t.me/yourgroupname"
-              disabled={isCreating}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="discord">Discord</label>
-            <input
-              type="text"
-              id="discord"
-              name="discord"
-              value={formData.discord}
-              onChange={handleInputChange}
-              placeholder="discord.gg/yourserver"
-              disabled={isCreating}
-            />
-          </div>
+          <span className={`dropdown-arrow ${socialLinksOpen ? 'open' : ''}`}>▼</span>
         </div>
+        
+        {socialLinksOpen && (
+          <div className="collapsible-content">
+            <div className="form-group">
+              <label htmlFor="website">Website URL</label>
+              <input
+                type="url"
+                id="website"
+                name="website"
+                value={formData.website}
+                onChange={handleInputChange}
+                placeholder="https://yourwebsite.com"
+                disabled={isCreating}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="twitter">Twitter</label>
+              <input
+                type="text"
+                id="twitter"
+                name="twitter"
+                value={formData.twitter}
+                onChange={handleInputChange}
+                placeholder="@yourtwitterhandle"
+                disabled={isCreating}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="telegram">Telegram</label>
+              <input
+                type="text"
+                id="telegram"
+                name="telegram"
+                value={formData.telegram}
+                onChange={handleInputChange}
+                placeholder="t.me/yourgroupname"
+                disabled={isCreating}
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="discord">Discord</label>
+              <input
+                type="text"
+                id="discord"
+                name="discord"
+                value={formData.discord}
+                onChange={handleInputChange}
+                placeholder="discord.gg/yourserver"
+                disabled={isCreating}
+              />
+            </div>
+          </div>
+        )}
+      </div>
         
         {/* Advanced Options with Enhanced Design */}
         <div className="form-section advanced-options-card">

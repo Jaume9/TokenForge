@@ -3,6 +3,7 @@ import './App.css';
 import ConnectPhantomButton from './components/ConnectPhantomButton';
 import TokenCreatorForm from './components/TokenCreatorForm';
 import NavBar from './components/NavBar';
+import HelpSidebar from './components/HelpSidebar';
 
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
@@ -28,6 +29,7 @@ function App() {
             <div className="card">
               <TokenCreatorForm />
             </div>
+            <HelpSidebar />
           </div>
         </WalletModalProvider>
       </WalletProvider>

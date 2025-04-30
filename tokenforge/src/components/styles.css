@@ -613,3 +613,89 @@ textarea.error:focus {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(114, 114, 239, 0.5);
   background: linear-gradient(45deg, #4a44f2, #5e59f7);
 }
+
+.help-sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 300px;
+  height: 100vh;
+  background: linear-gradient(135deg, #252539, #32324a);
+  color: #e0e0e0;
+  box-shadow: -4px 0 10px rgba(0, 0, 0, 0.3);
+  overflow-y: auto;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.help-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
+  color: #a0a0ff;
+}
+
+.steps-container {
+  margin-bottom: 20px;
+}
+
+.steps-list {
+  list-style: decimal inside;
+  padding-left: 0;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.info-card {
+  background: rgba(40, 40, 60, 0.8);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.info-card h4 {
+  font-size: 1.2rem;
+  color: #e0e0e0;
+  margin-bottom: 10px;
+}
+
+.info-card p,
+.info-card ul,
+.info-card ol {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin: 0;
+  padding: 0;
+}
+
+.info-card ul {
+  list-style: disc inside;
+  margin-top: 10px;
+}
+
+.info-card ol {
+  list-style: decimal inside;
+  margin-top: 10px;
+}
+
+.highlight-text {
+  color: #44c944;
+  font-weight: bold;
+}
+
+.note-text {
+  font-style: italic;
+  color: #bbb;
+}
+
+.security-tips ul {
+  list-style: square inside;
+  margin-top: 10px;
+}

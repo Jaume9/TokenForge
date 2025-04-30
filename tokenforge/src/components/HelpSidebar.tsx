@@ -27,10 +27,10 @@ const HelpSidebar: React.FC = () => {
           <p>Base cost: <strong>0.1 SOL</strong></p>
           <p>Additional options:</p>
           <ul>
-            <li>Revoke Mint Authority: <strong>+0.1 SOL</strong></li>
-            <li>Revoke Freeze Authority: <strong>+0.1 SOL</strong></li>
-            <li>Revoke Update Authority: <strong>+0.1 SOL</strong></li>
-            <li>Custom Creator Info: <strong>+0.1 SOL</strong></li>
+            <li>Revoke Mint Authority: <strong>+0.05 SOL</strong></li>
+            <li>Revoke Freeze Authority: <strong>+0.05 SOL</strong></li>
+            <li>Revoke Update Authority: <strong>+0.05 SOL</strong></li>
+            <li>Custom Creator Info: <strong>+0.05 SOL</strong></li>
           </ul>
         </div>
 

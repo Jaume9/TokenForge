@@ -70,10 +70,10 @@ const TokenCreatorForm: React.FC = () => {
   // Calculate total cost whenever relevant form fields change
   useEffect(() => {
     let cost = 0.1; // Base cost
-    if (formData.revokeMintAuthority) cost += 0.1;
-    if (formData.revokeFreezeAuthority) cost += 0.1;
-    if (formData.revokeUpdateAuthority) cost += 0.1;
-    if (formData.modifyCreatorInfo) cost += 0.1;
+    if (formData.revokeMintAuthority) cost += 0.05;
+    if (formData.revokeFreezeAuthority) cost += 0.05;
+    if (formData.revokeUpdateAuthority) cost += 0.05;
+    if (formData.modifyCreatorInfo) cost += 0.05;
     setTotalCost(cost);
   }, [
     formData.revokeMintAuthority,
@@ -607,7 +607,7 @@ const TokenCreatorForm: React.FC = () => {
                   disabled={isCreating}
                 />
                 <label htmlFor="revokeMintAuthority">
-                  Revoke Mint Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.1 SOL</span>
+                  Revoke Mint Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.05 SOL</span>
                 </label>
               </div>
               <div className="tooltip-icon" title="Permanently prevents anyone from creating additional tokens">ⓘ</div>
@@ -630,7 +630,7 @@ const TokenCreatorForm: React.FC = () => {
                   disabled={isCreating}
                 />
                 <label htmlFor="revokeFreezeAuthority">
-                  Revoke Freeze Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.1 SOL</span>
+                  Revoke Freeze Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.05 SOL</span>
                 </label>
               </div>
               <div className="tooltip-icon" title="Removes the ability to freeze token accounts">ⓘ</div>
@@ -653,7 +653,7 @@ const TokenCreatorForm: React.FC = () => {
                   disabled={isCreating}
                 />
                 <label htmlFor="revokeUpdateAuthority">
-                  Revoke Update Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.1 SOL</span>
+                  Revoke Update Authority -- HIGHLY RECOMMENDED<span className="option-cost">+0.05 SOL</span>
                 </label>
               </div>
               <div className="tooltip-icon" title="Makes token metadata permanent and unchangeable">ⓘ</div>
@@ -676,7 +676,7 @@ const TokenCreatorForm: React.FC = () => {
                   disabled={isCreating}
                 />
                 <label htmlFor="modifyCreatorInfo">
-                  Add Creator Information <span className="option-cost">+0.1 SOL</span>
+                  Add Creator Information <span className="option-cost">+0.05 SOL</span>
                 </label>
               </div>
               <div className="tooltip-icon" title="Associate creator details with this token">ⓘ</div>
@@ -722,7 +722,7 @@ const TokenCreatorForm: React.FC = () => {
         <div className="cost-summary">
           <h3>Cost Summary</h3>
           <p className="total-cost">
-            Total Cost: <strong>{totalCost.toFixed(1)} SOL</strong>
+            Total Cost: <strong>{totalCost.toFixed(2)} SOL</strong>
           </p>
         </div>
         

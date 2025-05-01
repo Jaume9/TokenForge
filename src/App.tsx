@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import './App.css';
 import ConnectPhantomButton from './components/ConnectPhantomButton';
 import TokenCreatorForm from './components/TokenCreatorForm';
@@ -17,22 +17,28 @@ import TrustSection from './components/TrustSection';
 import Footer from './components/Footer';
 
 function App() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const network = WalletAdapterNetwork.Devnet;
   const endpoint = useMemo(() => clusterApiUrl(network), [network]);
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen((prev) => !prev);
+  };
 
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
-          <div className="App">
+          <div className={`App ${isSidebarOpen ? 'sidebar-open' : ''}`}>
             <header className="App-header">TokenForge</header>
             <NavBar />
             <ConnectPhantomButton />
+            <HelpSidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
             <div className="card">
               <TokenCreatorForm />
             </div>
-            <HelpSidebar />
             <TrustSection />
             <Footer />
           </div>

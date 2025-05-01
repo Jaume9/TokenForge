@@ -3,6 +3,13 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 
+//variable de entorno que indica si la aplicación está en modo ''development'' o ''production''
+if (process.env.NODE_ENV === 'development') {
+  console.log = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+}
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );

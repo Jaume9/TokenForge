@@ -11,7 +11,7 @@ const NavBar: React.FC = () => {
           rel="noopener noreferrer"
           className="nav-link"
         >
-          <span className="nav-icon">🔄</span>
+          <span className="nav-icon"></span>
           Create Liquidity
         </a>
         <a 
@@ -20,7 +20,7 @@ const NavBar: React.FC = () => {
           rel="noopener noreferrer"
           className="nav-link"
         >
-          <span className="nav-icon">📊</span>
+          <span className="nav-icon"></span>
           Manage Liquidity
         </a>
       </div>

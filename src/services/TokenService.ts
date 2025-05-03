@@ -156,10 +156,10 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
 
   // Calcular costo total
   let totalCost = 0.1; // Base
-  if (config.revokeMintAuthority) totalCost += 0.05;
-  if (config.revokeFreezeAuthority) totalCost += 0.05;
-  if (config.revokeUpdateAuthority) totalCost += 0.05;
-  if (config.creatorInfo) totalCost += 0.05;
+  if (config.revokeMintAuthority) totalCost += 0.08;
+  if (config.revokeFreezeAuthority) totalCost += 0.08;
+  if (config.revokeUpdateAuthority) totalCost += 0.08;
+  if (config.creatorInfo) totalCost += 0.1;
   
   // Verificar si el usuario tiene suficiente saldo
   /*
@@ -192,10 +192,10 @@ export const createTokenWithMetadata = async (wallet: any, config: TokenConfig) 
     // Mostrar opciones seleccionadas y costo
     console.log(`Opciones seleccionadas:`);
     console.log(`- Creación básica del token: 0.1 SOL`);
-    if (config.revokeMintAuthority) console.log(`- Revocar Mint Authority: 0.05 SOL`);
-    if (config.revokeFreezeAuthority) console.log(`- Revocar Freeze Authority: 0.05 SOL`);
-    if (config.revokeUpdateAuthority) console.log(`- Revocar Update Authority: 0.05 SOL`);
-    if (config.creatorInfo) console.log(`- Información del creador: 0.05 SOL`);
+    if (config.revokeMintAuthority) console.log(`- Revocar Mint Authority: 0.08 SOL`);
+    if (config.revokeFreezeAuthority) console.log(`- Revocar Freeze Authority: 0.08 SOL`);
+    if (config.revokeUpdateAuthority) console.log(`- Revocar Update Authority: 0.08 SOL`);
+    if (config.creatorInfo) console.log(`- Información del creador: 0.1 SOL`);
     console.log(`Costo total: ${totalCost} SOL`);
     
     // Subir imagen y metadatos

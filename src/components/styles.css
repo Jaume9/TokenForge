@@ -836,3 +836,47 @@ textarea.error:focus {
 .help-sidebar.open {
   transform: translateX(0); /* Mostrar cuando está abierto */
 }
+
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(30, 30, 47, 0.9);
+  color: #e0e0e0;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.cookie-banner p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.cookie-banner a {
+  color: #7272ef;
+  text-decoration: underline;
+}
+
+.cookie-banner a:hover {
+  text-decoration: none;
+}
+
+.accept-button {
+  background: #44c944;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s;
+}
+
+.accept-button:hover {
+  background: #3aa63a;
+}

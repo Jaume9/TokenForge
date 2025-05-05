@@ -15,6 +15,7 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 
 import TrustSection from './components/TrustSection';
 import Footer from './components/Footer';
+import CookieConsent from './components/CookieConsent';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -41,6 +42,7 @@ function App() {
             </div>
             <TrustSection />
             <Footer />
+            <CookieConsent />
           </div>
         </WalletModalProvider>
       </WalletProvider>
